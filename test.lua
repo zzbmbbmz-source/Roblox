@@ -9,14 +9,18 @@ local Window = MyUI:CreateWindow({
 -- =================================================================
 -- MAIN TAB
 -- =================================================================
-local TabMain = Window:CreateTab("Main")
+local CreditTab = Window:CreateTab("Credit",-1000)
 
-
+CreditTab:CreateButton({
+    Title = creditCfg.Title or "3A1TR",
+    SubTitle = creditCfg.SubTitle or "Created by 3A1TR",
+    Callback = function() end,
+})
 
 -- =================================================================
 -- PLAYER TAB (ฟังก์ชันเกี่ยวกับตัวละคร)
 -- =================================================================
-local TabPlayer = Window:CreateTab("PLAYER")
+local TabPlayer = Window:CreateTab("PLAYER",100)
 
 TabPlayer:CreateSlider({
     Title = "WalkSpeed", SubTitle = "ปรับความเร็วในการเดินพื้นฐาน",
@@ -51,7 +55,7 @@ TabPlayer:CreateToggle({
 -- =================================================================
 -- VISUAL TAB (ฟังก์ชันการมองเห็น / ESP)
 -- =================================================================
-local TabVisual = Window:CreateTab("VISUAL")
+local TabVisual = Window:CreateTab("VISUAL",110)
 
 TabVisual:CreateToggle({
     Title = "Player ESP", SubTitle = "มองเห็นผู้เล่นทะลุกำแพง (Highlight)",
@@ -77,7 +81,7 @@ TabVisual:CreateToggle({
 -- =================================================================
 -- MISC TAB (ฟังก์ชันเบ็ดเตล็ด)
 -- =================================================================
-local TabMisc = Window:CreateTab("Misc")
+local TabMisc = Window:CreateTab("Misc",120)
 
 TabMisc:CreateToggle({
     Title = "Noclip", SubTitle = "เดินทะลุกำแพง/สิ่งกีดขวาง",
@@ -97,7 +101,7 @@ TabMisc:CreateToggle({
 -- =================================================================
 -- SETTING TAB (ตั้งค่าตัว UI และระบบสคริปต์)
 -- =================================================================
-local TabSetting = Window:CreateTab("Setting")
+local TabSetting = Window:CreateTab("Setting",130)
 
 TabSetting:CreateButton({
     Title = "Destroy UI", SubTitle = "ปิดและลบหน้าต่างสคริปต์นี้ออก",
