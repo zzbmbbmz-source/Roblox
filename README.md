@@ -4,7 +4,7 @@
 
 | ไฟล์ | หน้าที่ |
 |---|---|
-| `Ui.lua` | Core UI library (`MyUI`) — สร้างหน้าต่าง, แท็บ, ปุ่ม, สไลเดอร์ ฯลฯ แทบไม่ต้องแก้ต่อ |
+| `Ui-1.lua` | Core UI library (`MyUI`) — สร้างหน้าต่าง, แท็บ, ปุ่ม, สไลเดอร์ ฯลฯ แทบไม่ต้องแก้ต่อ |
 | `test.lua` | Hub script — โหลด `Ui.lua`, สร้างแท็บพื้นฐาน (Main/Player/Visual/Misc/Setting), แล้ว **`return Window, MyUI`** |
 
 เพราะ `test.lua` return ค่ากลับมา สคริปต์อื่นที่ `loadstring` ไฟล์นี้จึงรับ `Window`
