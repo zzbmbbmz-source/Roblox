@@ -3,13 +3,13 @@ local MyUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/zzbmbbmz
 local Window = MyUI:CreateWindow({ 
     Title = "My Hub", 
     SubTitle = "v1.0",
-    Scale = 0.7  -- ย่อ UI ทั้งหน้าต่างเหลือ 70%
+    Scale = 0.7
 })
 
 -- =================================================================
 -- MAIN TAB
 -- =================================================================
-local TabPlayer = Window:CreateTab("PLAYER", 100)
+local TabPlayer = Window:CreateTab("PLAYER")
 
 TabPlayer:CreateSlider({
     Title = "WalkSpeed", SubTitle = "ปรับความเร็วในการเดินพื้นฐาน",
@@ -76,37 +76,57 @@ TabPlayer:CreateToggle({
     end
 })
 
+-- =================================================================
+-- FIX FULLBRIGHT SYSTEM
+-- =================================================================
+local Lighting = game:GetService("Lighting")
+
+local function ResetLighting()
+    if _G.DefaultLighting then
+        Lighting.Brightness = _G.DefaultLighting.Brightness
+        Lighting.ClockTime = _G.DefaultLighting.ClockTime
+        Lighting.FogEnd = _G.DefaultLighting.FogEnd
+        Lighting.GlobalShadows = _G.DefaultLighting.GlobalShadows
+        Lighting.Ambient = _G.DefaultLighting.Ambient
+        Lighting.OutdoorAmbient = _G.DefaultLighting.OutdoorAmbient
+    end
+end
+
 TabPlayer:CreateToggle({
-    Title = "FullBright", SubTitle = "ปรับแสงสว่างเต็มที่",
+    Title = "FullBright", SubTitle = "ปรับแสงสว่างเต็มที่ตัดหมอกและเงา",
     Default = false,
     Callback = function(v)
         _G.FullBright = v
+        
         if _G.FullBright then
-            if not _G.NormalLightingSettings then
-                _G.NormalLightingSettings = {
-                    Brightness = game:GetService("Lighting").Brightness,
-                    ClockTime = game:GetService("Lighting").ClockTime,
-                    FogEnd = game:GetService("Lighting").FogEnd,
-                    GlobalShadows = game:GetService("Lighting").GlobalShadows,
-                    Ambient = game:GetService("Lighting").Ambient
+            if not _G.DefaultLighting then
+                _G.DefaultLighting = {
+                    Brightness = Lighting.Brightness,
+                    ClockTime = Lighting.ClockTime,
+                    FogEnd = Lighting.FogEnd,
+                    GlobalShadows = Lighting.GlobalShadows,
+                    Ambient = Lighting.Ambient,
+                    OutdoorAmbient = Lighting.OutdoorAmbient
                 }
             end
-            game:GetService("Lighting").Brightness = 1
-            game:GetService("Lighting").ClockTime = 12
-            game:GetService("Lighting").FogEnd = 786543
-            game:GetService("Lighting").GlobalShadows = false
-            game:GetService("Lighting").Ambient = Color3.fromRGB(178, 178, 178)
-        else
-            if _G.NormalLightingSettings then
-                game:GetService("Lighting").Brightness = _G.NormalLightingSettings.Brightness
-                game:GetService("Lighting").ClockTime = _G.NormalLightingSettings.ClockTime
-                game:GetService("Lighting").FogEnd = _G.NormalLightingSettings.FogEnd
-                game:GetService("Lighting").GlobalShadows = _G.NormalLightingSettings.GlobalShadows
-                game:GetService("Lighting").Ambient = _G.NormalLightingSettings.Ambient
+            
+            if not _G.FullBrightConnected then
+                _G.FullBrightConnected = true
+                game:GetService("RunService").RenderStepped:Connect(function()
+                    if _G.FullBright then
+                        Lighting.Brightness = 2
+                        Lighting.ClockTime = 14
+                        Lighting.FogEnd = 999999
+                        Lighting.GlobalShadows = false
+                        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+                        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+                    end
+                end)
             end
+        else
+            ResetLighting()
         end
     end
-}) 
+})
 
 return Window, MyUI
-
