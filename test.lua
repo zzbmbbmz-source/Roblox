@@ -19,15 +19,6 @@ TabPlayer:CreateSlider({
     end
 })
 
-TabPlayer:CreateSlider({
-    Title = "JumpPower", SubTitle = "ปรับความสูงในการกระโดด",
-    Min = 50, Max = 300, Default = 50, 
-    Callback = function(v)
-        game.Players.LocalPlayer.Character.Humanoid.UseJumpPower = true
-        game.Players.LocalPlayer.Character.Humanoid.JumpPower = v
-    end
-})
-
 TabPlayer:CreateToggle({
     Title = "Infinite Jump", SubTitle = "กระโดดได้เรื่อยๆ บนอากาศ",
     Default = false,
