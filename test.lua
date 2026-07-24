@@ -9,7 +9,7 @@ local Window = MyUI:CreateWindow({
 -- =================================================================
 -- MAIN TAB
 -- =================================================================
-local CreditTab = Window:CreateTab("Credit",1)
+local MainTab = Window:CreateTab("Credit",1)
 
 CreditTab:CreateButton({
     Title = creditCfg.Title or "3A1TR",
