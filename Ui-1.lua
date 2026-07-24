@@ -561,6 +561,42 @@ function MyUI:CreateTab(name)
         Parent = self.PagesContainer,
     })
 
+    		-- แทรกโค้ดนี้ต่อจากคำสั่งตั้งค่าโครงสร้างของตัวแปร Page (ประมาณบรรทัดที่ 561-562)
+		function Page:CreateLabel(config)
+			local LabelTitle = config.Title or "Label"
+			local LabelColor = config.Color or Color3.fromRGB(255, 255, 255)
+			
+			local LabelFrame = Instance.new("Frame")
+			local TextLabel = Instance.new("TextLabel")
+			local UICorner = Instance.new("UICorner")
+			local UIPadding = Instance.new("UIPadding")
+
+			LabelFrame.Name = "LabelFrame"
+			LabelFrame.Parent = Page -- ส่งเข้าไปแสดงผลในตัวแปร Page ของแท็บนั้นๆ อัตโนมัติ
+			LabelFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+			LabelFrame.BackgroundTransparency = 0.4
+			LabelFrame.Size = UDim2.new(1, 0, 0, 35)
+			
+			UICorner.CornerRadius = UDim.new(0, 6)
+			UICorner.Parent = LabelFrame
+
+			TextLabel.Parent = LabelFrame
+			TextLabel.BackgroundTransparency = 1
+			TextLabel.Size = UDim2.new(1, 0, 1, 0)
+			TextLabel.Font = Enum.Font.GothamBold
+			TextLabel.Text = LabelTitle
+			TextLabel.TextColor3 = LabelColor
+			TextLabel.TextSize = 14
+			TextLabel.TextXAlignment = Enum.TextXAlignment.Center -- จัดข้อความอยู่กึ่งกลางกล่อง
+
+			UIPadding.Parent = TextLabel
+			UIPadding.PaddingLeft = UDim.new(0, 10)
+			
+			return LabelFrame
+    end
+
+
+    
     new("UIListLayout", {
         Padding = UDim.new(0, 10),
         SortOrder = Enum.SortOrder.LayoutOrder,
