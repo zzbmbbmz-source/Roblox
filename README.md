@@ -29,7 +29,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/zzbmbbmz-source/Roblo
 
 ```lua
 -- สคริปต์ของคุณเอง (แยกไฟล์ต่างหาก)
-local Window = loadstring(game:HttpGet("https://raw.githubusercontent.com/USER/REPO/refs/heads/main/test.lua"))()
+local Window = loadstring(game:HttpGet("https://raw.githubusercontent.com/zzbmbbmz-source/Roblox/refs/heads/main/Test.lua"))()
 
 local MyTab = Window:CreateTab("My Feature")
 
