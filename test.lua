@@ -106,5 +106,5 @@ TabSetting:CreateButton({
         print("UI Destroyed") 
     end
 })
-
+return Window, MyUI
 
