@@ -12,7 +12,8 @@ local TabPlayer = Window:CreateTab("PLAYER")
 -- CREDIT TEXT
 -- =================================================================
 TabPlayer:CreateLabel({
-    Title = "CreateBy: ---->3A1TR<----"
+    Title = "⚡ CreateBy: ---->3A1TR<---- ⚡",
+    Color = Color3.fromRGB(0, 255, 128) -- ใช้ข้อความสีเขียวสะท้อนแสงสไตล์ Cyberpunk
 })
 
 -- =================================================================
