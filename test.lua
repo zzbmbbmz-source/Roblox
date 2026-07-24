@@ -9,7 +9,7 @@ local Window = MyUI:CreateWindow({
 -- =================================================================
 -- MAIN TAB
 -- =================================================================
-local CreditTab = Window:CreateTab("Credit",-1000)
+local CreditTab = Window:CreateTab("Credit")
 
 CreditTab:CreateButton({
     Title = creditCfg.Title or "3A1TR",
@@ -20,7 +20,7 @@ CreditTab:CreateButton({
 -- =================================================================
 -- PLAYER TAB (ฟังก์ชันเกี่ยวกับตัวละคร)
 -- =================================================================
-local TabPlayer = Window:CreateTab("PLAYER",100)
+local TabPlayer = Window:CreateTab("PLAYER")
 
 TabPlayer:CreateSlider({
     Title = "WalkSpeed", SubTitle = "ปรับความเร็วในการเดินพื้นฐาน",
@@ -55,7 +55,7 @@ TabPlayer:CreateToggle({
 -- =================================================================
 -- VISUAL TAB (ฟังก์ชันการมองเห็น / ESP)
 -- =================================================================
-local TabVisual = Window:CreateTab("VISUAL",110)
+local TabVisual = Window:CreateTab("VISUAL")
 
 TabVisual:CreateToggle({
     Title = "Player ESP", SubTitle = "มองเห็นผู้เล่นทะลุกำแพง (Highlight)",
@@ -81,7 +81,7 @@ TabVisual:CreateToggle({
 -- =================================================================
 -- MISC TAB (ฟังก์ชันเบ็ดเตล็ด)
 -- =================================================================
-local TabMisc = Window:CreateTab("Misc",120)
+local TabMisc = Window:CreateTab("Misc")
 
 TabMisc:CreateToggle({
     Title = "Noclip", SubTitle = "เดินทะลุกำแพง/สิ่งกีดขวาง",
@@ -101,7 +101,7 @@ TabMisc:CreateToggle({
 -- =================================================================
 -- SETTING TAB (ตั้งค่าตัว UI และระบบสคริปต์)
 -- =================================================================
-local TabSetting = Window:CreateTab("Setting",130)
+local TabSetting = Window:CreateTab("Setting")
 
 TabSetting:CreateButton({
     Title = "Destroy UI", SubTitle = "ปิดและลบหน้าต่างสคริปต์นี้ออก",
