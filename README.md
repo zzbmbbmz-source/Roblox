@@ -15,7 +15,7 @@
 ## เริ่มต้นแบบเดิม (ผู้ใช้ทั่วไป)
 
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/zzbmbbmz-source/Roblox/refs/heads/main/Test.lua"))()
+local Window = loadstring(game:HttpGet("https://raw.githubusercontent.com/zzbmbbmz-source/Roblox/refs/heads/main/test.lua"))()
 ```
 
 ได้ UI + แท็บพื้นฐานทั้งหมดตามที่ตั้งไว้ใน `test.lua`
@@ -29,7 +29,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/zzbmbbmz-source/Roblo
 
 ```lua
 -- สคริปต์ของคุณเอง (แยกไฟล์ต่างหาก)
-local Window = loadstring(game:HttpGet("https://raw.githubusercontent.com/zzbmbbmz-source/Roblox/refs/heads/main/Test.lua"))()
+local Window = loadstring(game:HttpGet("https://raw.githubusercontent.com/zzbmbbmz-source/Roblox/refs/heads/main/test.lua"))()
 
 local MyTab = Window:CreateTab("My Feature")
 
