@@ -21,45 +21,9 @@ TabPlayer:CreateSlider({
     end
 })
 
-TabPlayer:CreateToggle({
-    Title = "Infinite Jump", SubTitle = "กระโดดได้เรื่อยๆ บนอากาศ",
-    Default = false,
-    Callback = function(v)
-        _G.InfJump = v
-        if not _G.InfJumpConnected then
-            _G.InfJumpConnected = true
-            game:GetService("UserInputService").JumpRequest:Connect(function()
-                if _G.InfJump and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-                    game.Players.LocalPlayer.Character.Humanoid:ChangeState("Jumping")
-                end
-            end)
-        end
-    end
-})
 
 TabPlayer:CreateToggle({
-    Title = "Player ESP", SubTitle = "มองเห็นผู้เล่นทะลุกำแพง (Highlight)",
-    Default = false,
-    Callback = function(v)
-        _G.EspActive = v
-        local function applyESP(player)
-            if player ~= game.Players.LocalPlayer and player.Character then
-                if _G.EspActive then
-                    local hl = player.Character:FindFirstChildOfClass("Highlight") or Instance.new("Highlight", player.Character)
-                    hl.FillColor = Color3.fromRGB(255, 0, 0)
-                    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-                else
-                    local hl = player.Character:FindFirstChildOfClass("Highlight")
-                    if hl then hl:Destroy() end
-                end
-            end
-        end
-        for _, p in pairs(game.Players:GetPlayers()) do applyESP(p) end
-    end
-})
-
-TabPlayer:CreateToggle({
-    Title = "Noclip", SubTitle = "เดินทะลุกำแพง/สิ่งกีดขวาง",
+    Title = "No clip", SubTitle = "เดินทะลุกำแพง/สิ่งกีดขวาง",
     Default = false,
     Callback = function(v)
         _G.Noclip = v
@@ -76,9 +40,6 @@ TabPlayer:CreateToggle({
     end
 })
 
--- =================================================================
--- FIX FULLBRIGHT SYSTEM
--- =================================================================
 local Lighting = game:GetService("Lighting")
 
 local function ResetLighting()
@@ -125,6 +86,43 @@ TabPlayer:CreateToggle({
             end
         else
             ResetLighting()
+        end
+    end
+})
+
+TabPlayer:CreateToggle({
+    Title = "Player ESP", SubTitle = "มองเห็นผู้เล่นทะลุกำแพง (Highlight)",
+    Default = false,
+    Callback = function(v)
+        _G.EspActive = v
+        local function applyESP(player)
+            if player ~= game.Players.LocalPlayer and player.Character then
+                if _G.EspActive then
+                    local hl = player.Character:FindFirstChildOfClass("Highlight") or Instance.new("Highlight", player.Character)
+                    hl.FillColor = Color3.fromRGB(255, 0, 0)
+                    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                else
+                    local hl = player.Character:FindFirstChildOfClass("Highlight")
+                    if hl then hl:Destroy() end
+                end
+            end
+        end
+        for _, p in pairs(game.Players:GetPlayers()) do applyESP(p) end
+    end
+})
+
+TabPlayer:CreateToggle({
+    Title = "Infinite Jump", SubTitle = "กระโดดได้เรื่อยๆ บนอากาศ",
+    Default = false,
+    Callback = function(v)
+        _G.InfJump = v
+        if not _G.InfJumpConnected then
+            _G.InfJumpConnected = true
+            game:GetService("UserInputService").JumpRequest:Connect(function()
+                if _G.InfJump and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+                    game.Players.LocalPlayer.Character.Humanoid:ChangeState("Jumping")
+                end
+            end)
         end
     end
 })
