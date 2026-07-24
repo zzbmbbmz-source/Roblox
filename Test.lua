@@ -11,21 +11,7 @@ local Window = MyUI:CreateWindow({
 -- =================================================================
 local TabMain = Window:CreateTab("Main")
 
-TabMain:CreateToggle({
-    Title = "Toggle", SubTitle = "เปิด / ปิด ฟังก์ชัน",
-    Default = false, Callback = function(v) print("Main Toggle:", v) end
-})
 
-TabMain:CreateSlider({
-    Title = "Walkspeed", SubTitle = "ปรับความเร็วในการเดิน",
-    Min = 16, Max = 200, Default = 16, Callback = function(v) print("Main Speed:", v) end
-})
-
-TabMain:CreateDropdown({
-    Title = "Mode", SubTitle = "เลือกโหมดการทำงาน",
-    Options = {"Easy","Normal","Hard"}, Default = "Easy",
-    Callback = function(v) print("Main Mode:", v) end
-})
 
 -- =================================================================
 -- PLAYER TAB (ฟังก์ชันเกี่ยวกับตัวละคร)
