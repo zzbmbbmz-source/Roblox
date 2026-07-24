@@ -6,6 +6,9 @@ local Window = MyUI:CreateWindow({
     Scale = 0.7
 })
 
+-- ป้ายลอยมุมจอ + FPS counter
+Window:CreateWatermark({ Text = "My Hub | v1.0", ShowFPS = true })
+
 local TabPlayer = Window:CreateTab("PLAYER")
 
 -- =================================================================
@@ -16,9 +19,12 @@ TabPlayer:CreateLabel({
     Align = "Center",   -- จัดข้อความกึ่งกลาง
     Glow = true,        -- ขอบไล่สี cyan → purple แบบเดียวกับกรอบหน้าต่างหลัก ดูเด่น
 })
+
 -- =================================================================
--- PLAYER FUNCTIONS
+-- MOVEMENT
 -- =================================================================
+TabPlayer:CreateSection({ Title = "Movement" })
+
 TabPlayer:CreateSlider({
     Title = "WalkSpeed", SubTitle = "ปรับความเร็วในการเดินพื้นฐาน",
     Min = 16, Max = 250, Default = 16, 
@@ -34,6 +40,12 @@ TabPlayer:CreateToggle({
     Default = false,
     Callback = function(v)
         _G.InfJump = v
+        Window:Notify({
+            Title = "Infinite Jump",
+            Content = v and "เปิดใช้งานแล้ว" or "ปิดใช้งานแล้ว",
+            Type = v and "Success" or "Warning",
+            Duration = 2,
+        })
         if not _G.InfJumpConnected then
             _G.InfJumpConnected = true
             game:GetService("UserInputService").JumpRequest:Connect(function()
@@ -46,10 +58,45 @@ TabPlayer:CreateToggle({
 })
 
 TabPlayer:CreateToggle({
+    Title = "Noclip", SubTitle = "เดินทะลุกำแพง/สิ่งกีดขวาง",
+    Default = false,
+    Callback = function(v)
+        _G.Noclip = v
+        Window:Notify({
+            Title = "Noclip",
+            Content = v and "เปิดใช้งานแล้ว" or "ปิดใช้งานแล้ว",
+            Type = v and "Success" or "Warning",
+            Duration = 2,
+        })
+        if not _G.NoclipConnected then
+            _G.NoclipConnected = true
+            game:GetService("RunService").Stepped:Connect(function()
+                if _G.Noclip and game.Players.LocalPlayer.Character then
+                    for _, part in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then part.CanCollide = false end
+                    end
+                end
+            end)
+        end
+    end
+})
+
+-- =================================================================
+-- VISUAL
+-- =================================================================
+TabPlayer:CreateSection({ Title = "Visual" })
+
+TabPlayer:CreateToggle({
     Title = "Player ESP", SubTitle = "มองเห็นผู้เล่นทะลุกำแพง (Highlight)",
     Default = false,
     Callback = function(v)
         _G.EspActive = v
+        Window:Notify({
+            Title = "Player ESP",
+            Content = v and "เปิดใช้งานแล้ว" or "ปิดใช้งานแล้ว",
+            Type = v and "Success" or "Warning",
+            Duration = 2,
+        })
         local function applyESP(player)
             if player ~= game.Players.LocalPlayer and player.Character then
                 if _G.EspActive then
@@ -66,27 +113,16 @@ TabPlayer:CreateToggle({
     end
 })
 
-TabPlayer:CreateToggle({
-    Title = "Noclip", SubTitle = "เดินทะลุกำแพง/สิ่งกีดขวาง",
-    Default = false,
-    Callback = function(v)
-        _G.Noclip = v
-        if not _G.NoclipConnected then
-            _G.NoclipConnected = true
-            game:GetService("RunService").Stepped:Connect(function()
-                if _G.Noclip and game.Players.LocalPlayer.Character then
-                    for _, part in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
-                        if part:IsA("BasePart") then part.CanCollide = false end
-                    end
-                end
-            end)
-        end
-    end
+-- =================================================================
+-- WORLD (Fullbright / Lighting)
+-- =================================================================
+TabPlayer:CreateSection({ Title = "World" })
+
+TabPlayer:CreateParagraph({
+    Title = "หมายเหตุ",
+    Content = "FullBright จะบันทึกค่าแสงเดิมไว้อัตโนมัติ และคืนค่ากลับให้เมื่อปิดใช้งาน",
 })
 
--- =================================================================
--- FIX FULLBRIGHT SYSTEM
--- =================================================================
 local Lighting = game:GetService("Lighting")
 
 local function ResetLighting()
@@ -105,7 +141,13 @@ TabPlayer:CreateToggle({
     Default = false,
     Callback = function(v)
         _G.FullBright = v
-        
+        Window:Notify({
+            Title = "FullBright",
+            Content = v and "เปิดใช้งานแล้ว" or "คืนค่าแสงเดิมแล้ว",
+            Type = v and "Success" or "Info",
+            Duration = 2,
+        })
+
         if _G.FullBright then
             if not _G.DefaultLighting then
                 _G.DefaultLighting = {
@@ -117,7 +159,7 @@ TabPlayer:CreateToggle({
                     OutdoorAmbient = Lighting.OutdoorAmbient
                 }
             end
-            
+
             if not _G.FullBrightConnected then
                 _G.FullBrightConnected = true
                 game:GetService("RunService").RenderStepped:Connect(function()
@@ -133,28 +175,6 @@ TabPlayer:CreateToggle({
             end
         else
             ResetLighting()
-        end
-    end
-})
-
-return Window, MyUI
-        end
-        for _, p in pairs(game.Players:GetPlayers()) do applyESP(p) end
-    end
-})
-
-TabPlayer:CreateToggle({
-    Title = "Infinite Jump", SubTitle = "กระโดดได้เรื่อยๆ บนอากาศ",
-    Default = false,
-    Callback = function(v)
-        _G.InfJump = v
-        if not _G.InfJumpConnected then
-            _G.InfJumpConnected = true
-            game:GetService("UserInputService").JumpRequest:Connect(function()
-                if _G.InfJump and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-                    game.Players.LocalPlayer.Character.Humanoid:ChangeState("Jumping")
-                end
-            end)
         end
     end
 })
