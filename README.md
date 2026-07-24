@@ -15,7 +15,7 @@
 ## เริ่มต้นแบบเดิม (ผู้ใช้ทั่วไป)
 
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/USER/REPO/refs/heads/main/test.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/zzbmbbmz-source/Roblox/refs/heads/main/Test.lua"))()
 ```
 
 ได้ UI + แท็บพื้นฐานทั้งหมดตามที่ตั้งไว้ใน `test.lua`
