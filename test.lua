@@ -3,34 +3,13 @@ local MyUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/zzbmbbmz
 local Window = MyUI:CreateWindow({ 
     Title = "My Hub", 
     SubTitle = "v1.0",
-    Scale = 0.5  -- ย่อ UI ทั้งหน้าต่างเหลือ 50% (1 = ปกติ, 0.5 = ครึ่งหนึ่ง)
+    Scale = 0.7  -- ย่อ UI ทั้งหน้าต่างเหลือ 50% (1 = ปกติ, 0.5 = ครึ่งหนึ่ง)
 })
 
 -- =================================================================
 -- MAIN TAB
 -- =================================================================
-local TabMain = Window:CreateTab("Main")
-
-TabMain:CreateToggle({
-    Title = "Toggle", SubTitle = "เปิด / ปิด ฟังก์ชัน",
-    Default = false, Callback = function(v) print("Main Toggle:", v) end
-})
-
-TabMain:CreateSlider({
-    Title = "Walkspeed", SubTitle = "ปรับความเร็วในการเดิน",
-    Min = 16, Max = 200, Default = 16, Callback = function(v) print("Main Speed:", v) end
-})
-
-TabMain:CreateDropdown({
-    Title = "Mode", SubTitle = "เลือกโหมดการทำงาน",
-    Options = {"Easy","Normal","Hard"}, Default = "Easy",
-    Callback = function(v) print("Main Mode:", v) end
-})
-
--- =================================================================
--- PLAYER TAB (ฟังก์ชันเกี่ยวกับตัวละคร)
--- =================================================================
-local TabPlayer = Window:CreateTab("PLAYER")
+local TabPlayer = Window:CreateTab("PLAYER",100)
 
 TabPlayer:CreateSlider({
     Title = "WalkSpeed", SubTitle = "ปรับความเร็วในการเดินพื้นฐาน",
@@ -62,12 +41,8 @@ TabPlayer:CreateToggle({
     end
 })
 
--- =================================================================
--- VISUAL TAB (ฟังก์ชันการมองเห็น / ESP)
--- =================================================================
-local TabVisual = Window:CreateTab("VISUAL")
 
-TabVisual:CreateToggle({
+TabPlayer:CreateToggle({
     Title = "Player ESP", SubTitle = "มองเห็นผู้เล่นทะลุกำแพง (Highlight)",
     Default = false,
     Callback = function(v)
@@ -88,12 +63,8 @@ TabVisual:CreateToggle({
     end
 })
 
--- =================================================================
--- MISC TAB (ฟังก์ชันเบ็ดเตล็ด)
--- =================================================================
-local TabMisc = Window:CreateTab("Misc")
 
-TabMisc:CreateToggle({
+TabPlayer:CreateToggle({
     Title = "Noclip", SubTitle = "เดินทะลุกำแพง/สิ่งกีดขวาง",
     Default = false,
     Callback = function(v)
@@ -108,18 +79,6 @@ TabMisc:CreateToggle({
     end
 })
 
--- =================================================================
--- SETTING TAB (ตั้งค่าตัว UI และระบบสคริปต์)
--- =================================================================
-local TabSetting = Window:CreateTab("Setting")
-
-TabSetting:CreateButton({
-    Title = "Destroy UI", SubTitle = "ปิดและลบหน้าต่างสคริปต์นี้ออก",
-    Callback = function()
-        -- ใส่โค้ดเคลียร์ UI ของคุณที่นี่ เช่น MyUI:Destroy() หรือตามเมธอดของ API
-        print("UI Destroyed") 
-    end
-})
 
 
 return Window, MyUI
