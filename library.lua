@@ -604,11 +604,15 @@ function NexusUI:Window(config)
                 -- Visual feedback
                 pcall(function()
                     Tween(btn, { BackgroundColor3 = Theme.AccentHover }, 0.06)
-                    task and task.delay and task.delay(0.12, function()
-                        pcall(function() Tween(btn, { BackgroundColor3 = Theme.Card }) end)
-                    end) or delay(0.12, function()
-                        pcall(function() Tween(btn, { BackgroundColor3 = Theme.Card }) end)
-                    end)
+                    if task and task.delay then
+    task.delay(0.12, function()
+        pcall(function() Tween(btn, { BackgroundColor3 = Theme.Card }) end)
+    end)
+else
+    delay(0.12, function()
+        pcall(function() Tween(btn, { BackgroundColor3 = Theme.Card }) end)
+    end)
+                            end
                 end)
                 -- Fire callback safely
                 if callback then
