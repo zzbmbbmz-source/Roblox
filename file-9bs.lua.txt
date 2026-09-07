@@ -1,0 +1,851 @@
+--[[
+    Roblox Remote Event Scanner & Tester
+    ======================================
+    ฟีเจอร์หลัก:
+    - สแกน RemoteEvents และ RemoteFunctions ใน ReplicatedStorage
+    - สแกน Workspace หาโมเดลและสคริปต์
+    - ทดสอบยิง Remote Events ทุกตัว
+    - ส่งผลลัพธ์ไปยัง Discord Webhook
+    - บันทึก Log แบบละเอียด
+    
+    สำหรับ AI ตัวถัดไป:
+    - สามารถขยายระบบ Filtering ได้ที่ตัวแปร FILTER_PATTERNS
+    - เพิ่ม Test Cases ได้ที่ REMOTE_TEST_CASES
+    - ปรับแต่ง Embed Format ได้ที่ฟังก์ชัน createDiscordEmbed
+]]
+
+local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+
+-- ============================================
+-- CONFIGURATION SECTION - ปรับแต่งได้ตามต้องการ
+-- ============================================
+
+local CONFIG = {
+    -- Discord Webhook URL (ใส่ของคุณที่นี่)
+    WEBHOOK_URL = "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN",
+    
+    -- ตั้งค่าการทดสอบ
+    TEST_DELAY = 0.1,           -- ดีเลย์ระหว่างการยิงแต่ละครั้ง (วินาที)
+    MAX_TEST_ARGS = 5,          -- จำนวน argument สูงสุดที่ทดสอบ
+    TIMEOUT_SECONDS = 5,        -- Timeout สำหรับ RemoteFunction
+    
+    -- ตั้งค่าการสแกน
+    SCAN_WORKSPACE = true,
+    SCAN_REPLICATED_STORAGE = true,
+    SCAN_STARTER_PACK = true,
+    
+    -- ตัวกรองชื่อที่ไม่ต้องการทดสอบ (ป้องกัน Anti-Cheat)
+    FILTER_PATTERNS = {
+        "Report",
+        "Ban",
+        "Kick",
+        "Admin",
+        "Moderator",
+        "Log",
+        "Audit",
+        "Security"
+    },
+    
+    -- ข้อมูลผู้ใช้
+    USERNAME = Players.LocalPlayer and Players.LocalPlayer.Name or "Unknown",
+    USER_ID = Players.LocalPlayer and Players.LocalPlayer.UserId or 0,
+    PLACE_ID = game.PlaceId,
+    JOB_ID = game.JobId
+}
+
+-- ============================================
+-- DATA STORAGE
+-- ============================================
+
+local ScanResults = {
+    RemoteEvents = {},
+    RemoteFunctions = {},
+    WorkspaceObjects = {},
+    Scripts = {},
+    TestResults = {},
+    Errors = {},
+    Timestamp = os.time(),
+    Duration = 0
+}
+
+-- ============================================
+-- UTILITY FUNCTIONS
+-- ============================================
+
+-- ตรวจสอบว่าชื่ออยู่ในรายการกรองหรือไม่
+local function shouldFilter(name)
+    name = name:lower()
+    for _, pattern in ipairs(CONFIG.FILTER_PATTERNS) do
+        if name:find(pattern:lower()) then
+            return true
+        end
+    end
+    return false
+end
+
+-- สร้าง ID ไม่ซ้ำ
+local function generateId()
+    return HttpService:GenerateGUID(false)
+end
+
+-- แปลงตารางเป็น JSON string
+local function tableToJson(tbl)
+    local success, result = pcall(function()
+        return HttpService:JSONEncode(tbl)
+    end)
+    if success then
+        return result
+    else
+        return "{\"error\": \"Failed to encode JSON\"}"
+    end
+end
+
+-- แปลง JSON string เป็นตาราง
+local function jsonToTable(json)
+    local success, result = pcall(function()
+        return HttpService:JSONDecode(json)
+    end)
+    if success then
+        return result
+    else
+        return nil
+    end
+end
+
+-- ============================================
+-- SCANNING FUNCTIONS
+-- ============================================
+
+-- สแกนหา RemoteEvents และ RemoteFunctions
+local function scanRemotes(container, path)
+    path = path or container.Name
+    local remotes = {}
+    
+    for _, obj in ipairs(container:GetDescendants()) do
+        local objPath = path .. "." .. obj:GetFullName()
+        
+        if obj:IsA("RemoteEvent") then
+            table.insert(ScanResults.RemoteEvents, {
+                Name = obj.Name,
+                Path = obj:GetFullName(),
+                Parent = obj.Parent and obj.Parent.Name or "nil",
+                ShouldFilter = shouldFilter(obj.Name),
+                Instance = obj
+            })
+        elseif obj:IsA("RemoteFunction") then
+            table.insert(ScanResults.RemoteFunctions, {
+                Name = obj.Name,
+                Path = obj:GetFullName(),
+                Parent = obj.Parent and obj.Parent.Name or "nil",
+                ShouldFilter = shouldFilter(obj.Name),
+                Instance = obj
+            })
+        end
+    end
+end
+
+-- สแกน Workspace
+local function scanWorkspace()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        table.insert(ScanResults.WorkspaceObjects, {
+            Name = obj.Name,
+            ClassName = obj.ClassName,
+            Path = obj:GetFullName(),
+            HasScripts = obj:FindFirstChildOfClass("Script") ~= nil or 
+                        obj:FindFirstChildOfClass("LocalScript") ~= nil
+        })
+        
+        -- เก็บรายการสคริปต์
+        if obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") then
+            table.insert(ScanResults.Scripts, {
+                Name = obj.Name,
+                ClassName = obj.ClassName,
+                Path = obj:GetFullName(),
+                Parent = obj.Parent and obj.Parent.Name or "nil"
+            })
+        end
+    end
+end
+
+-- ============================================
+-- TESTING FUNCTIONS
+-- ============================================
+
+-- Test Cases สำหรับ Remote Events
+local REMOTE_TEST_CASES = {
+    -- Test Case 1: ไม่ส่งอะไรเลย
+    {
+        name = "No Args",
+        args = {}
+    },
+    -- Test Case 2: ส่งตัวเลข
+    {
+        name = "Single Number",
+        args = {123}
+    },
+    -- Test Case 3: ส่งข้อความ
+    {
+        name = "Single String",
+        args = {"test"}
+    },
+    -- Test Case 4: ส่งตาราง
+    {
+        name = "Table",
+        args = {{key = "value", number = 42}}
+    },
+    -- Test Case 5: ส่งหลายค่า
+    {
+        name = "Multiple Args",
+        args = {"test", 123, true, {nested = "data"}}
+    },
+    -- Test Case 6: ส่ง Player
+    {
+        name = "With Player",
+        args = {Players.LocalPlayer}
+    },
+    -- Test Case 7: ส่ง CFrame
+    {
+        name = "With CFrame",
+        args = {CFrame.new(0, 0, 0)}
+    },
+    -- Test Case 8: ส่ง Vector3
+    {
+        name = "With Vector3", 
+        args = {Vector3.new(1, 2, 3)}
+    }
+}
+
+-- ทดสอบ RemoteEvent
+local function testRemoteEvent(remoteData)
+    local remote = remoteData.Instance
+    local results = {
+        RemoteName = remoteData.Name,
+        RemotePath = remoteData.Path,
+        Tests = {},
+        Success = false,
+        Filtered = remoteData.ShouldFilter
+    }
+    
+    if remoteData.ShouldFilter then
+        results.Status = "FILTERED"
+        results.Message = "Skipped due to filter pattern"
+        table.insert(ScanResults.TestResults, results)
+        return results
+    end
+    
+    for _, testCase in ipairs(REMOTE_TEST_CASES) do
+        local testResult = {
+            CaseName = testCase.name,
+            Args = {},
+            Success = false,
+            Error = nil,
+            ResponseTime = 0
+        }
+        
+        -- แปลง arguments เป็น string สำหรับบันทึก
+        for i, arg in ipairs(testCase.args) do
+            local argType = typeof(arg)
+            table.insert(testResult.Args, string.format("[%d] %s: %s", i, argType, tostring(arg):sub(1, 50)))
+        end
+        
+        -- ทดสอบยิง RemoteEvent
+        local startTime = tick()
+        local success, error = pcall(function()
+            remote:FireServer(unpack(testCase.args))
+        end)
+        
+        testResult.ResponseTime = tick() - startTime
+        testResult.Success = success
+        if not success then
+            testResult.Error = tostring(error)
+        end
+        
+        table.insert(results.Tests, testResult)
+        
+        -- รอดีเลย์ระหว่างการทดสอบ
+        task.wait(CONFIG.TEST_DELAY)
+    end
+    
+    results.Success = true
+    results.Status = "COMPLETED"
+    table.insert(ScanResults.TestResults, results)
+    
+    return results
+end
+
+-- ทดสอบ RemoteFunction
+local function testRemoteFunction(remoteData)
+    local remote = remoteData.Instance
+    local results = {
+        RemoteName = remoteData.Name,
+        RemotePath = remoteData.Path,
+        Tests = {},
+        Success = false,
+        Filtered = remoteData.ShouldFilter,
+        IsRemoteFunction = true
+    }
+    
+    if remoteData.ShouldFilter then
+        results.Status = "FILTERED"
+        results.Message = "Skipped due to filter pattern"
+        table.insert(ScanResults.TestResults, results)
+        return results
+    end
+    
+    for _, testCase in ipairs(REMOTE_TEST_CASES) do
+        local testResult = {
+            CaseName = testCase.name,
+            Args = {},
+            Success = false,
+            Error = nil,
+            ResponseTime = 0,
+            ReturnValue = nil,
+            ReturnType = nil
+        }
+        
+        -- แปลง arguments เป็น string
+        for i, arg in ipairs(testCase.args) do
+            local argType = typeof(arg)
+            table.insert(testResult.Args, string.format("[%d] %s: %s", i, argType, tostring(arg):sub(1, 50)))
+        end
+        
+        -- ทดสอบ Invoke Server พร้อม Timeout
+        local startTime = tick()
+        local success, result = pcall(function()
+            return remote:InvokeServer(unpack(testCase.args))
+        end)
+        
+        testResult.ResponseTime = tick() - startTime
+        testResult.Success = success
+        
+        if success then
+            testResult.ReturnValue = tostring(result):sub(1, 100)
+            testResult.ReturnType = typeof(result)
+        else
+            testResult.Error = tostring(result)
+        end
+        
+        table.insert(results.Tests, testResult)
+        
+        -- รอดีเลย์
+        task.wait(CONFIG.TEST_DELAY)
+    end
+    
+    results.Success = true
+    results.Status = "COMPLETED"
+    table.insert(ScanResults.TestResults, results)
+    
+    return results
+end
+
+-- ============================================
+-- DISCORD WEBHOOK FUNCTIONS
+-- ============================================
+
+-- สร้าง Discord Embed
+local function createDiscordEmbed(results)
+    local totalRemotes = #results.RemoteEvents + #results.RemoteFunctions
+    local testedRemotes = 0
+    local filteredRemotes = 0
+    local errors = 0
+    
+    for _, test in ipairs(results.TestResults) do
+        if test.Filtered then
+            filteredRemotes = filteredRemotes + 1
+        else
+            testedRemotes = testedRemotes + 1
+        end
+        for _, t in ipairs(test.Tests or {}) do
+            if not t.Success then
+                errors = errors + 1
+            end
+        end
+    end
+    
+    local embed = {
+        title = "🔍 Roblox Remote Event Scan Report",
+        description = string.format(
+            "สแกนเสร็จสิ้นในสถานที่ **%d**\n" ..
+            "Job ID: `%s`",
+            CONFIG.PLACE_ID,
+            CONFIG.JOB_ID:sub(1, 20) .. "..."
+        ),
+        color = 0x00FF00,
+        timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ", results.Timestamp),
+        footer = {
+            text = string.format("Executed by %s (ID: %d)", CONFIG.USERNAME, CONFIG.USER_ID)
+        },
+        fields = {
+            {
+                name = "📊 สถิติการสแกน",
+                value = string.format(
+                    "```\n" ..
+                    "RemoteEvents:     %d\n" ..
+                    "RemoteFunctions:  %d\n" ..
+                    "Workspace Objects: %d\n" ..
+                    "Scripts Found:    %d\n" ..
+                    "```",
+                    #results.RemoteEvents,
+                    #results.RemoteFunctions,
+                    #results.WorkspaceObjects,
+                    #results.Scripts
+                ),
+                inline = true
+            },
+            {
+                name = "🧪 สถิติการทดสอบ",
+                value = string.format(
+                    "```\n" ..
+                    "Total Remotes:    %d\n" ..
+                    "Tested:           %d\n" ..
+                    "Filtered:         %d\n" ..
+                    "Test Cases Each:  %d\n" ..
+                    "```",
+                    totalRemotes,
+                    testedRemotes,
+                    filteredRemotes,
+                    #REMOTE_TEST_CASES
+                ),
+                inline = true
+            },
+            {
+                name = "⏱️ เวลาดำเนินการ",
+                value = string.format("%.2f วินาที", results.Duration),
+                inline = true
+            }
+        }
+    }
+    
+    -- เพิ่มฟิลด์ Remote Events ที่พบ (จำกัด 10 ตัวแรก)
+    if #results.RemoteEvents > 0 then
+        local eventList = ""
+        for i = 1, math.min(10, #results.RemoteEvents) do
+            local evt = results.RemoteEvents[i]
+            eventList = eventList .. string.format("• `%s` (%s)\n", evt.Name, evt.Parent)
+        end
+        if #results.RemoteEvents > 10 then
+            eventList = eventList .. string.format("...และอีก %d รายการ", #results.RemoteEvents - 10)
+        end
+        
+        table.insert(embed.fields, {
+            name = "📡 Remote Events ที่พบ",
+            value = eventList,
+            inline = false
+        })
+    end
+    
+    -- เพิ่มฟิลด์ Remote Functions ที่พบ (จำกัด 10 ตัวแรก)
+    if #results.RemoteFunctions > 0 then
+        local funcList = ""
+        for i = 1, math.min(10, #results.RemoteFunctions) do
+            local func = results.RemoteFunctions[i]
+            funcList = funcList .. string.format("• `%s` (%s)\n", func.Name, func.Parent)
+        end
+        if #results.RemoteFunctions > 10 then
+            funcList = funcList .. string.format("...และอีก %d รายการ", #results.RemoteFunctions - 10)
+        end
+        
+        table.insert(embed.fields, {
+            name = "🔧 Remote Functions ที่พบ",
+            value = funcList,
+            inline = false
+        })
+    end
+    
+    -- เพิ่มฟิลด์ข้อผิดพลาด (ถ้ามี)
+    if errors > 0 then
+        table.insert(embed.fields, {
+            name = "⚠️ ข้อผิดพลาด",
+            value = string.format("พบ %d ข้อผิดพลาดระหว่างการทดสอบ", errors),
+            inline = false
+        })
+        embed.color = 0xFFA500
+    end
+    
+    return embed
+end
+
+-- ส่งข้อมูลไปยัง Discord
+local function sendToDiscord(results)
+    if CONFIG.WEBHOOK_URL == "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN" then
+        warn("⚠️ กรุณาตั้งค่า WEBHOOK_URL ก่อนใช้งาน!")
+        return false
+    end
+    
+    local embed = createDiscordEmbed(results)
+    
+    -- สร้าง payload
+    local payload = {
+        username = "Roblox Remote Scanner",
+        avatar_url = "https://www.roblox.com/favicon.ico",
+        embeds = {embed}
+    }
+    
+    -- ส่งข้อมูลหลัก
+    local success, errorMsg = pcall(function()
+        local response = request({
+            Url = CONFIG.WEBHOOK_URL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = tableToJson(payload)
+        })
+        
+        if response.StatusCode ~= 204 and response.StatusCode ~= 200 then
+            error("HTTP " .. response.StatusCode .. ": " .. response.Body)
+        end
+    end)
+    
+    if not success then
+        warn("❌ ไม่สามารถส่งข้อมูลหลักไป Discord ได้: " .. tostring(errorMsg))
+        
+        -- ลองส่งแบบข้อความสั้นๆ ถ้า embed ล้มเหลว
+        local shortPayload = {
+            content = string.format(
+                "Remote Scan Complete | Place: %d | Events: %d | Functions: %d | Time: %.2fs",
+                CONFIG.PLACE_ID,
+                #results.RemoteEvents,
+                #results.RemoteFunctions,
+                results.Duration
+            )
+        }
+        
+        pcall(function()
+            request({
+                Url = CONFIG.WEBHOOK_URL,
+                Method = "POST",
+                Headers = {
+                    ["Content-Type"] = "application/json"
+                },
+                Body = tableToJson(shortPayload)
+            })
+        end)
+        
+        return false
+    end
+    
+    -- ส่งรายละเอียดเพิ่มเติมเป็นไฟล์ (ถ้ามีผลลัพธ์มาก)
+    if #results.TestResults > 0 then
+        local detailData = {
+            scanInfo = {
+                placeId = CONFIG.PLACE_ID,
+                jobId = CONFIG.JOB_ID,
+                userId = CONFIG.USER_ID,
+                username = CONFIG.USERNAME,
+                timestamp = results.Timestamp,
+                duration = results.Duration
+            },
+            remoteEvents = {},
+            remoteFunctions = {},
+            testResults = {},
+            workspaceSummary = {
+                totalObjects = #results.WorkspaceObjects,
+                scriptsFound = #results.Scripts
+            }
+        }
+        
+        -- เก็บข้อมูล Remote Events (ไม่รวม Instance)
+        for _, evt in ipairs(results.RemoteEvents) do
+            table.insert(detailData.remoteEvents, {
+                name = evt.Name,
+                path = evt.Path,
+                parent = evt.Parent,
+                filtered = evt.ShouldFilter
+            })
+        end
+        
+        -- เก็บข้อมูล Remote Functions
+        for _, func in ipairs(results.RemoteFunctions) do
+            table.insert(detailData.remoteFunctions, {
+                name = func.Name,
+                path = func.Path,
+                parent = func.Parent,
+                filtered = func.ShouldFilter
+            })
+        end
+        
+        -- เก็บผลการทดสอบ (จำกัดขนาด)
+        for i, test in ipairs(results.TestResults) do
+            if i <= 50 then -- จำกัด 50 รายการแรก
+                local testSummary = {
+                    remoteName = test.RemoteName,
+                    remotePath = test.RemotePath,
+                    status = test.Status,
+                    filtered = test.Filtered,
+                    tests = {}
+                }
+                
+                for _, t in ipairs(test.Tests or {}) do
+                    table.insert(testSummary.tests, {
+                        caseName = t.CaseName,
+                        success = t.Success,
+                        responseTime = t.ResponseTime,
+                        error = t.Error and t.Error:sub(1, 200) or nil,
+                        returnType = t.ReturnType
+                    })
+                end
+                
+                table.insert(detailData.testResults, testSummary)
+            end
+        end
+        
+        -- ส่งเป็นไฟล์ JSON
+        local jsonData = tableToJson(detailData)
+        
+        pcall(function()
+            -- ใช้ paste service หรือส่งเป็น chunk
+            request({
+                Url = CONFIG.WEBHOOK_URL,
+                Method = "POST",
+                Headers = {
+                    ["Content-Type"] = "application/json"
+                },
+                Body = tableToJson({
+                    content = "📄 **รายละเอียดเพิ่มเติม (JSON):**\n```json\n" .. jsonData:sub(1, 1900) .. "\n```"
+                })
+            })
+        end)
+    end
+    
+    print("✅ ส่งข้อมูลไป Discord สำเร็จ!")
+    return true
+end
+
+-- ============================================
+-- MAIN EXECUTION
+-- ============================================
+
+local function runFullScan()
+    local startTime = tick()
+    
+    print("========================================")
+    print("🔍 ROBLOX REMOTE EVENT SCANNER")
+    print("========================================")
+    print(string.format("⏰ เริ่มต้น: %s", os.date("%Y-%m-%d %H:%M:%S")))
+    print(string.format("👤 ผู้ใช้: %s (%d)", CONFIG.USERNAME, CONFIG.USER_ID))
+    print(string.format("🎮 Place ID: %d", CONFIG.PLACE_ID))
+    print(string.format("🆔 Job ID: %s", CONFIG.JOB_ID))
+    print("========================================\n")
+    
+    -- 1. สแกน Remote Events
+    print("📡 กำลังสแกน Remote Events...")
+    if CONFIG.SCAN_REPLICATED_STORAGE then
+        scanRemotes(ReplicatedStorage)
+    end
+    
+    print(string.format("   พบ RemoteEvents: %d รายการ", #ScanResults.RemoteEvents))
+    print(string.format("   พบ RemoteFunctions: %d รายการ", #ScanResults.RemoteFunctions))
+    
+    -- 2. สแกน Workspace
+    if CONFIG.SCAN_WORKSPACE then
+        print("\n🗂️  กำลังสแกน Workspace...")
+        scanWorkspace()
+        print(string.format("   พบ Objects: %d รายการ", #ScanResults.WorkspaceObjects))
+        print(string.format("   พบ Scripts: %d รายการ", #ScanResults.Scripts))
+    end
+    
+    -- 3. ทดสอบ Remote Events
+    print("\n🧪 กำลังทดสอบ Remote Events...")
+    for i, remoteData in ipairs(ScanResults.RemoteEvents) do
+        print(string.format("   [%d/%d] ทดสอบ: %s", i, #ScanResults.RemoteEvents, remoteData.Name))
+        testRemoteEvent(remoteData)
+    end
+    
+    -- 4. ทดสอบ Remote Functions
+    print("\n🔧 กำลังทดสอบ Remote Functions...")
+    for i, remoteData in ipairs(ScanResults.RemoteFunctions) do
+        print(string.format("   [%d/%d] ทดสอบ: %s", i, #ScanResults.RemoteFunctions, remoteData.Name))
+        testRemoteFunction(remoteData)
+    end
+    
+    -- 5. คำนวณเวลา
+    ScanResults.Duration = tick() - startTime
+    
+    -- 6. สรุปผล
+    print("\n========================================")
+    print("📊 สรุปผลการสแกน")
+    print("========================================")
+    print(string.format("⏱️  เวลารวม: %.2f วินาที", ScanResults.Duration))
+    print(string.format("📡 RemoteEvents: %d", #ScanResults.RemoteEvents))
+    print(string.format("🔧 RemoteFunctions: %d", #ScanResults.RemoteFunctions))
+    print(string.format("🧪 จำนวนการทดสอบ: %d", #ScanResults.TestResults))
+    
+    -- 7. ส่งไป Discord
+    print("\n📤 กำลังส่งข้อมูลไป Discord...")
+    sendToDiscord(ScanResults)
+    
+    print("\n✅ เสร็จสิ้น!")
+    
+    -- คืนค่าผลลัพธ์สำหรับใช้ต่อ
+    return ScanResults
+end
+
+-- ============================================
+-- EXPORT FUNCTIONS (สำหรับ AI ตัวถัดไป)
+-- ============================================
+
+local RemoteScanner = {
+    Config = CONFIG,
+    Results = ScanResults,
+    TestCases = REMOTE_TEST_CASES,
+    
+    -- ฟังก์ชันสำหรับขยายเพิ่มเติม
+    AddTestCase = function(name, args)
+        table.insert(REMOTE_TEST_CASES, {
+            name = name,
+            args = args
+        })
+        print(string.format("✅ เพิ่ม Test Case: %s", name))
+    end,
+    
+    AddFilterPattern = function(pattern)
+        table.insert(CONFIG.FILTER_PATTERNS, pattern)
+        print(string.format("✅ เพิ่ม Filter Pattern: %s", pattern))
+    end,
+    
+    -- รีเซ็ตผลลัพธ์
+    ResetResults = function()
+        ScanResults = {
+            RemoteEvents = {},
+            RemoteFunctions = {},
+            WorkspaceObjects = {},
+            Scripts = {},
+            TestResults = {},
+            Errors = {},
+            Timestamp = os.time(),
+            Duration = 0
+        }
+        RemoteScanner.Results = ScanResults
+        print("✅ รีเซ็ตผลลัพธ์เรียบร้อย")
+    end,
+    
+    -- รันสแกนใหม่
+    RunScan = runFullScan,
+    
+    -- ดึงผลลัพธ์เป็น JSON
+    GetResultsAsJson = function()
+        local exportData = {
+            config = {
+                placeId = CONFIG.PLACE_ID,
+                jobId = CONFIG.JOB_ID,
+                username = CONFIG.USERNAME,
+                userId = CONFIG.USER_ID,
+                timestamp = ScanResults.Timestamp,
+                duration = ScanResults.Duration
+            },
+            summary = {
+                remoteEventsCount = #ScanResults.RemoteEvents,
+                remoteFunctionsCount = #ScanResults.RemoteFunctions,
+                workspaceObjectsCount = #ScanResults.WorkspaceObjects,
+                scriptsCount = #ScanResults.Scripts,
+                testResultsCount = #ScanResults.TestResults
+            },
+            remoteEvents = {},
+            remoteFunctions = {},
+            testResults = {}
+        }
+        
+        -- Export Remote Events
+        for _, evt in ipairs(ScanResults.RemoteEvents) do
+            table.insert(exportData.remoteEvents, {
+                name = evt.Name,
+                path = evt.Path,
+                parent = evt.Parent,
+                filtered = evt.ShouldFilter
+            })
+        end
+        
+        -- Export Remote Functions
+        for _, func in ipairs(ScanResults.RemoteFunctions) do
+            table.insert(exportData.remoteFunctions, {
+                name = func.Name,
+                path = func.Path,
+                parent = func.Parent,
+                filtered = func.ShouldFilter
+            })
+        end
+        
+        -- Export Test Results (สรุป)
+        for _, test in ipairs(ScanResults.TestResults) do
+            local summary = {
+                remoteName = test.RemoteName,
+                remotePath = test.RemotePath,
+                status = test.Status,
+                filtered = test.Filtered,
+                isRemoteFunction = test.IsRemoteFunction or false,
+                testCount = #test.Tests,
+                successCount = 0,
+                errorCount = 0
+            }
+            
+            for _, t in ipairs(test.Tests) do
+                if t.Success then
+                    summary.successCount = summary.successCount + 1
+                else
+                    summary.errorCount = summary.errorCount + 1
+                end
+            end
+            
+            table.insert(exportData.testResults, summary)
+        end
+        
+        return tableToJson(exportData)
+    end,
+    
+    -- ส่งผลลัพธ์ปัจจุบันไป Discord อีกครั้ง
+    ResendToDiscord = function()
+        return sendToDiscord(ScanResults)
+    end
+}
+
+-- ============================================
+-- INITIALIZATION
+-- ============================================
+
+-- ตรวจสอบว่าอยู่ใน Roblox หรือไม่
+if not game then
+    warn("This script is designed for Roblox environment!")
+    return
+end
+
+-- ตรวจสอบ executor
+if not request then
+    warn("⚠️ ต้องใช้ Roblox Executor ที่รองรับ request function!")
+    warn("รองรับ: Synapse X, KRNL, Fluxus, Script-Ware, Electron")
+    return
+end
+
+-- เริ่มต้นทำงานอัตโนมัติ (สามารถคอมเมนต์ออกได้ถ้าต้องการรันด้วยตนเอง)
+-- runFullScan()
+
+-- เก็บไว้ในตัวแปร global สำหรับเข้าถึงจากภายนอก
+getgenv = getgenv or function() return _G end
+getgenv().RemoteScanner = RemoteScanner
+
+print([[
+========================================
+🤖 REMOTE SCANNER พร้อมใช้งาน!
+========================================
+
+คำสั่งที่ใช้ได้:
+• RemoteScanner.RunScan()           -- รันสแกนเต็มรูปแบบ
+• RemoteScanner.ResetResults()        -- รีเซ็ตผลลัพธ์
+• RemoteScanner.ResendToDiscord()     -- ส่งผลลัพธ์ไป Discord อีกครั้ง
+• RemoteScanner.GetResultsAsJson()  -- ดึงผลลัพธ์เป็น JSON
+• RemoteScanner.AddTestCase(name, args)      -- เพิ่ม Test Case
+• RemoteScanner.AddFilterPattern(pattern)    -- เพิ่ม Pattern กรอง
+
+ตัวอย่างการใช้งาน:
+  RemoteScanner.AddTestCase("Custom", {"custom", 123})
+  RemoteScanner.RunScan()
+
+========================================
+]])
+
+-- คืนค่า Module สำหรับ AI ตัวถัดไป
+return RemoteScanner
