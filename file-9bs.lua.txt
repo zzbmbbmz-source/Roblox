@@ -26,7 +26,7 @@ local StarterGui = game:GetService("StarterGui")
 
 local CONFIG = {
     -- Discord Webhook URL (ใส่ของคุณที่นี่)
-    WEBHOOK_URL = "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN",
+    WEBHOOK_URL = "https://discord.com/api/webhooks/1546337648728342689/zcbi5bxrJlfdFbHHj-0WrK7IZwR3J4oDaE0zJwFkNSVHmIHRGZvMzrPMmdEZB29a1Vqc",
     
     -- ตั้งค่าการทดสอบ
     TEST_DELAY = 0.1,           -- ดีเลย์ระหว่างการยิงแต่ละครั้ง (วินาที)
