@@ -435,7 +435,8 @@ minimize.Activated:Connect(function()
 end)
 
 hideButton.Activated:Connect(function()
-    gui.Enabled = false
+    main.Visible = false
+    reopen.Visible = true
 end)
 
 local reopen = create("TextButton", {
@@ -453,12 +454,8 @@ local reopen = create("TextButton", {
 round(reopen, 14)
 stroke(reopen, PURPLE, 1, 0.2)
 reopen.Activated:Connect(function()
-    gui.Enabled = true
+    main.Visible = true
     reopen.Visible = false
-end)
-
-gui:GetPropertyChangedSignal("Enabled"):Connect(function()
-    reopen.Visible = not gui.Enabled
 end)
 
 local draggingWindow = false
