@@ -134,10 +134,18 @@ local categoryTitle = makeLabel(content, "FEATURE LIBRARY", UDim2.new(1, -24, 0,
 local description = makeLabel(content, "Choose a card to view or run your configured feature.", UDim2.new(1, -24, 0, 22), UDim2.fromOffset(14, 32), 11, THEME.muted)
 local status = makeLabel(content, "●  HUB READY", UDim2.new(1, -24, 0, 20), UDim2.new(0, 14, 1, -28), 10, THEME.green, Enum.Font.GothamBold)
 
-local cardHolder = Instance.new("Frame")
+local cardHolder = Instance.new("ScrollingFrame")
+cardHolder.Name = "CardScrollArea"
 cardHolder.BackgroundTransparency = 1
+cardHolder.BorderSizePixel = 0
 cardHolder.Position = UDim2.fromOffset(12, 64)
 cardHolder.Size = UDim2.new(1, -24, 1, -102)
+cardHolder.CanvasSize = UDim2.new(0, 0, 0, 0)
+cardHolder.AutomaticCanvasSize = Enum.AutomaticSize.Y
+cardHolder.ScrollingDirection = Enum.ScrollingDirection.Y
+cardHolder.ScrollBarThickness = 4
+cardHolder.ScrollBarImageColor3 = THEME.purple
+cardHolder.ClipsDescendants = true
 cardHolder.Parent = content
 
 local grid = Instance.new("UIGridLayout")
@@ -183,6 +191,7 @@ local categories = {
 }
 local categoryButtons = {}
 local selected = "HOME"
+local bubble -- forward declaration for Settings callbacks
 
 local function showCategory(name)
     selected = name
@@ -249,7 +258,7 @@ for i, item in ipairs(categories) do
     b.Activated:Connect(function() showCategory(item.name) end)
 end
 
-local bubble = makeButton(gui, "B", UDim2.fromOffset(56, 56), UDim2.new(0, 12, 0.5, -28), true)
+bubble = makeButton(gui, "B", UDim2.fromOffset(56, 56), UDim2.new(0, 12, 0.5, -28), true)
 bubble.Name = "FloatingOpenButton"
 bubble.TextSize = 23
 bubble.Visible = false
